@@ -5,7 +5,7 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::{Index, IndexWriter, ReloadPolicy};
-use tantivy::tokenizer::RegexTokenizer;
+use tantivy_bench::woztext;
 
 fn main() -> tantivy::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -55,19 +55,15 @@ fn build_and_search(
     let mut schema_builder = Schema::builder();
     let text_options = match tokenizer {
         "TEXT" => TEXT,
-        "wozregex" => TextOptions::default()
-            .set_indexing_options(TextFieldIndexing::default()
-                .set_tokenizer("wozregex")
-                // todo: look at options. positions allow phrase queries. can do just freqs
-                .set_index_option(IndexRecordOption::WithFreqsAndPositions)),
+        woztext::TOKENIZER_NAME => woztext::options(),
         _ => {panic!("Unknown tokenizer {}", tokenizer)}
     };
     let body = schema_builder.add_text_field("body", text_options);
     let schema = schema_builder.build();
     let index = Index::create_in_ram(schema);
-    if tokenizer == "wozregex" {
+    if tokenizer == woztext::TOKENIZER_NAME {
         index.tokenizers()
-            .register("wozregex", RegexTokenizer::new(r"(?:\w)")?);
+            .register(woztext::TOKENIZER_NAME, woztext::tokenizer()?);
     }
     let mut index_writer: IndexWriter = index.writer(index_mem_size)?;
 
