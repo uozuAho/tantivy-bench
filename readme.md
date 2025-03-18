@@ -1,5 +1,7 @@
 # My tantivy benchmarks
 
+Intended to compete with https://github.com/uozuAho/ts-fulltext-compare
+
 # Quick start
 - Install rust
 - `sudo apt install heaptrack`
@@ -10,12 +12,18 @@ cargo run --profile release -- <directory of md files>
 
 # get mem usage
 heaptrack ./target/release/tantivy-bench
-heaptrack --analyze "/home/woz/woz/tantivy-bench/heaptrack.tantivy-bench.45181.zst"
+heaptrack --analyze <use output of above command>
 ```
 
 # Current stats
 ```
+Using tokenizer TEXT
 After 5 runs. Time to index & search 10000 files:
-index: 160.6ms, search: 0.0ms
-peak heap memory consumption: 234.60M
+index: 162.4ms, search: 0.0ms
+
+Using tokenizer wozregex
+After 5 runs. Time to index & search 10000 files:
+index: 600.2ms, search: 19.8ms
+
+peak heap memory consumption: 310.66M (testing both indexes)
 ```

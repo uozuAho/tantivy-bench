@@ -22,14 +22,22 @@ fn main() -> tantivy::Result<()> {
     let mut index_times: Vec<Duration> = vec![];
     let mut search_times: Vec<Duration> = vec![];
 
-    for _ in 0..num_runs {
-        let (index, search, _num) = build_and_search(directory, index_mem_size, num_files)?;
-        index_times.push(index);
-        search_times.push(search);
-    }
+    // TEXT: default, but doesn't separate slashes, eg. a/b/c is not tokenized to a b c
+    // wozregex: separates slashes, but is 4-5 times slower than TEXT
+    let tokenizers = ["TEXT", "wozregex"];
 
-    println!("After {} runs. Time to index & search {} files:", num_runs, num_files);
-    println!("index: {:?}ms, search: {:?}ms", avg(&index_times), avg(&search_times));
+    for tokenizer in tokenizers {
+        for _ in 0..num_runs {
+            let (index, search, _num) = build_and_search(directory, tokenizer, index_mem_size, num_files)?;
+            index_times.push(index);
+            search_times.push(search);
+        }
+
+        println!();
+        println!("Using tokenizer {}", tokenizer);
+        println!("After {} runs. Time to index & search {} files:", num_runs, num_files);
+        println!("index: {:?}ms, search: {:?}ms", avg(&index_times), avg(&search_times));
+    }
 
     Ok(())
 }
@@ -38,19 +46,29 @@ fn avg(times: &Vec<Duration>) -> f64 {
     times.iter().map(|d| d.as_millis() as f64).sum::<f64>() / times.len() as f64
 }
 
-fn build_and_search(directory: &String, index_mem_size: usize, num_files: usize) -> tantivy::Result<(Duration, Duration, usize)> {
+fn build_and_search(
+    directory: &String,
+    tokenizer: &str,
+    index_mem_size: usize,
+    num_files: usize
+) -> tantivy::Result<(Duration, Duration, usize)> {
     let mut schema_builder = Schema::builder();
-    // todo: bench both tokenizers, and reasons for each
-    // let text_options = TextOptions::default()
-    //     .set_indexing_options(TextFieldIndexing::default()
-    //         .set_tokenizer("wozregex")
-    //         .set_index_option(IndexRecordOption::WithFreqsAndPositions)); // todo: look at options. positions allow phrase queries. can do just freqs
-    // let body = schema_builder.add_text_field("body", text_options);
-    let body = schema_builder.add_text_field("body", TEXT);
+    let text_options = match tokenizer {
+        "TEXT" => TEXT,
+        "wozregex" => TextOptions::default()
+            .set_indexing_options(TextFieldIndexing::default()
+                .set_tokenizer("wozregex")
+                // todo: look at options. positions allow phrase queries. can do just freqs
+                .set_index_option(IndexRecordOption::WithFreqsAndPositions)),
+        _ => {panic!("Unknown tokenizer {}", tokenizer)}
+    };
+    let body = schema_builder.add_text_field("body", text_options);
     let schema = schema_builder.build();
     let index = Index::create_in_ram(schema);
-    index.tokenizers()
-        .register("wozregex", RegexTokenizer::new(r"(?:\w)")?);
+    if tokenizer == "wozregex" {
+        index.tokenizers()
+            .register("wozregex", RegexTokenizer::new(r"(?:\w)")?);
+    }
     let mut index_writer: IndexWriter = index.writer(index_mem_size)?;
 
     let start_time = Instant::now();
