@@ -14,7 +14,7 @@ mod tests {
         let text_field = schema_builder.add_text_field("text", woztext::options());
 
         let index = Index::create_in_ram(schema_builder.build());
-        index.tokenizers().register(woztext::TOKENIZER_NAME, woztext::tokenizer().unwrap());
+        index.tokenizers().register(woztext::TOKENIZER_NAME, woztext::tokenizer());
 
         let mut index_writer: IndexWriter = index.writer(15_000_000).unwrap();
         index_writer.add_document(doc!(text_field => doc_text)).expect("TODO: panic message");

@@ -63,7 +63,7 @@ fn build_and_search(
     let index = Index::create_in_ram(schema);
     if tokenizer == woztext::TOKENIZER_NAME {
         index.tokenizers()
-            .register(woztext::TOKENIZER_NAME, woztext::tokenizer()?);
+            .register(woztext::TOKENIZER_NAME, woztext::tokenizer());
     }
     let mut index_writer: IndexWriter = index.writer(index_mem_size)?;
 

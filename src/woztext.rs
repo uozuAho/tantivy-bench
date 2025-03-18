@@ -1,5 +1,5 @@
 use tantivy::schema::{IndexRecordOption, TextFieldIndexing, TextOptions};
-use tantivy::tokenizer::RegexTokenizer;
+use tantivy::tokenizer::{Language, LowerCaser, RegexTokenizer, RemoveLongFilter, Stemmer, TextAnalyzer};
 
 pub const TOKENIZER_NAME: &'static str = "wozregex";
 
@@ -13,6 +13,12 @@ pub fn options() -> TextOptions {
         .set_indexing_options(indexing)
 }
 
-pub fn tokenizer() -> tantivy::Result<RegexTokenizer> {
-    RegexTokenizer::new(r"(?:\w)")
+pub fn tokenizer() -> TextAnalyzer {
+    let regex_tokenizer = RegexTokenizer::new(r"(?:\w)").unwrap();
+
+    TextAnalyzer::builder(regex_tokenizer)
+        .filter(RemoveLongFilter::limit(40))
+        .filter(LowerCaser)
+        .filter(Stemmer::new(Language::English))
+        .build()
 }
