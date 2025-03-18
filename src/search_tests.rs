@@ -48,8 +48,13 @@ mod tests {
     }
 
     #[test]
-    fn test_finds_stemmed_word() {
+    fn test_finds_simple_plural() {
         assert!(it_finds("bike", "I own several bikes"));
+    }
+
+    #[test]
+    fn test_finds_harder_plural() {
+        assert!(it_finds("library", "There are many libraries"));
     }
 
     #[test]
