@@ -4,17 +4,18 @@ use std::time::Instant;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
-use tantivy::{doc, Index, IndexWriter, ReloadPolicy};
+use tantivy::{Index, IndexWriter, ReloadPolicy};
 
 fn main() -> tantivy::Result<()> {
-    // let args: Vec<String> = env::args().collect();
-    // if args.len() < 2 {
-    //     eprintln!("Usage: {} <directory>", args[0]);
-    //     panic!("I dunno how to return an error");
-    // }
-    // let directory = &args[1];
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <directory>", args[0]);
+        panic!("I dunno how to return an error");
+    }
+    let directory = &args[1];
 
-    let directory = "/home/woz/Downloads/10000_md_files";
+    let index_mem_size = 400_000_000;
+    let num_files = 1000;
 
     println!("Building index...");
 
@@ -22,13 +23,13 @@ fn main() -> tantivy::Result<()> {
     let body = schema_builder.add_text_field("body", TEXT);
     let schema = schema_builder.build();
     let index = Index::create_in_ram(schema);
-    let mut index_writer: IndexWriter = index.writer(400_000_000)?;
+    let mut index_writer: IndexWriter = index.writer(index_mem_size)?;
 
     let start_time = Instant::now();
 
     println!("{:.2?}: Loading files...", start_time.elapsed());
 
-    for entry in fs::read_dir(directory)?.take(10000) {
+    for entry in fs::read_dir(directory)?.take(num_files) {
         let entry = entry?;
         let path = entry.path();
 
