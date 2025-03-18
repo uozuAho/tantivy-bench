@@ -5,6 +5,7 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::{Index, IndexWriter, ReloadPolicy};
+use tantivy::tokenizer::RegexTokenizer;
 
 fn main() -> tantivy::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -39,9 +40,17 @@ fn avg(times: &Vec<Duration>) -> f64 {
 
 fn build_and_search(directory: &String, index_mem_size: usize, num_files: usize) -> tantivy::Result<(Duration, Duration, usize)> {
     let mut schema_builder = Schema::builder();
+    // todo: bench both tokenizers, and reasons for each
+    // let text_options = TextOptions::default()
+    //     .set_indexing_options(TextFieldIndexing::default()
+    //         .set_tokenizer("wozregex")
+    //         .set_index_option(IndexRecordOption::WithFreqsAndPositions)); // todo: look at options. positions allow phrase queries. can do just freqs
+    // let body = schema_builder.add_text_field("body", text_options);
     let body = schema_builder.add_text_field("body", TEXT);
     let schema = schema_builder.build();
     let index = Index::create_in_ram(schema);
+    index.tokenizers()
+        .register("wozregex", RegexTokenizer::new(r"(?:\w)")?);
     let mut index_writer: IndexWriter = index.writer(index_mem_size)?;
 
     let start_time = Instant::now();
@@ -76,7 +85,7 @@ fn build_and_search(directory: &String, index_mem_size: usize, num_files: usize)
 
     let searcher = reader.searcher();
     let query_parser = QueryParser::for_index(&index, vec![body]);
-    let query = query_parser.parse_query("sea whale")?;
+    let query = query_parser.parse_query("Serpent room")?;
 
     let top_docs = searcher.search(&query, &TopDocs::with_limit(10))?;
     let num_found = top_docs.len();
