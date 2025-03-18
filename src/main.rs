@@ -1,6 +1,6 @@
 use std::{env, fs};
 use std::io::Read;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
@@ -12,13 +12,18 @@ fn main() -> tantivy::Result<()> {
         eprintln!("Usage: {} <directory>", args[0]);
         panic!("I dunno how to return an error");
     }
-    let directory = &args[1];
 
+    let directory = &args[1];
     let index_mem_size = 400_000_000;
     let num_files = 1000;
 
-    println!("Building index...");
+    let (index, search, num) = build_and_search(directory, index_mem_size, num_files)?;
+    println!("index: {:?}, search: {:?}, found: {}", index, search, num);
 
+    Ok(())
+}
+
+fn build_and_search(directory: &String, index_mem_size: usize, num_files: usize) -> tantivy::Result<(Duration, Duration, usize)> {
     let mut schema_builder = Schema::builder();
     let body = schema_builder.add_text_field("body", TEXT);
     let schema = schema_builder.build();
@@ -26,8 +31,6 @@ fn main() -> tantivy::Result<()> {
     let mut index_writer: IndexWriter = index.writer(index_mem_size)?;
 
     let start_time = Instant::now();
-
-    println!("{:.2?}: Loading files...", start_time.elapsed());
 
     for entry in fs::read_dir(directory)?.take(num_files) {
         let entry = entry?;
@@ -40,19 +43,17 @@ fn main() -> tantivy::Result<()> {
                     let mut content = String::new();
                     file.read_to_string(&mut content)?;
 
-                    let mut old_man_doc = TantivyDocument::default();
-                    old_man_doc.add_text(body, content);
-                    index_writer.add_document(old_man_doc)?;
+                    let mut doc = TantivyDocument::default();
+                    doc.add_text(body, content);
+                    index_writer.add_document(doc)?;
                 }
             }
         }
     }
 
-    println!("{:.2?}: Commiting index...", start_time.elapsed());
-
     index_writer.commit()?;
 
-    println!("{:.2?}: Preparing search...", start_time.elapsed());
+    let index_duration = start_time.elapsed();
 
     let reader = index
         .reader_builder()
@@ -63,12 +64,10 @@ fn main() -> tantivy::Result<()> {
     let query_parser = QueryParser::for_index(&index, vec![body]);
     let query = query_parser.parse_query("sea whale")?;
 
-    println!("{:.2?}: Running search...", start_time.elapsed());
-
     let top_docs = searcher.search(&query, &TopDocs::with_limit(10))?;
     let num_found = top_docs.len();
 
-    println!("{:.2?}: Done. Found {} docs.", start_time.elapsed(), num_found);
+    let search_duration = start_time.elapsed() - index_duration;
 
-    Ok(())
+    Ok((index_duration, search_duration, num_found))
 }
