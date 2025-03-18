@@ -15,12 +15,26 @@ fn main() -> tantivy::Result<()> {
 
     let directory = &args[1];
     let index_mem_size = 400_000_000;
-    let num_files = 1000;
+    let num_files = 10000;
+    let num_runs = 5;
 
-    let (index, search, num) = build_and_search(directory, index_mem_size, num_files)?;
-    println!("index: {:?}, search: {:?}, found: {}", index, search, num);
+    let mut index_times: Vec<Duration> = vec![];
+    let mut search_times: Vec<Duration> = vec![];
+
+    for _ in 0..num_runs {
+        let (index, search, _num) = build_and_search(directory, index_mem_size, num_files)?;
+        index_times.push(index);
+        search_times.push(search);
+    }
+
+    println!("After {} runs. Time to index & search {} files:", num_runs, num_files);
+    println!("index: {:?}ms, search: {:?}ms", avg(&index_times), avg(&search_times));
 
     Ok(())
+}
+
+fn avg(times: &Vec<Duration>) -> f64 {
+    times.iter().map(|d| d.as_millis() as f64).sum::<f64>() / times.len() as f64
 }
 
 fn build_and_search(directory: &String, index_mem_size: usize, num_files: usize) -> tantivy::Result<(Duration, Duration, usize)> {
