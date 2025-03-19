@@ -14,7 +14,7 @@ pub fn options() -> TextOptions {
 }
 
 pub fn tokenizer() -> TextAnalyzer {
-    let regex_tokenizer = RegexTokenizer::new(r"(?:\w)").unwrap();
+    let regex_tokenizer = RegexTokenizer::new(r"(?:\w+)").unwrap();
 
     TextAnalyzer::builder(regex_tokenizer)
         .filter(RemoveLongFilter::limit(40))

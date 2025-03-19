@@ -10,7 +10,6 @@ mod tests {
     // this is probably heavy, meh I dunno what I'm doing
     fn it_finds(query: &str, doc_text: &str) -> bool {
         let mut schema_builder = Schema::builder();
-        // todo: why does my indexer not find anything?
         let text_field = schema_builder.add_text_field("text", woztext::options());
 
         let index = Index::create_in_ram(schema_builder.build());
@@ -48,13 +47,18 @@ mod tests {
     }
 
     #[test]
-    fn test_finds_simple_plural() {
+    fn test_stem_bikes() {
         assert!(it_finds("bike", "I own several bikes"));
     }
 
     #[test]
-    fn test_finds_harder_plural() {
+    fn test_stem_libraries() {
         assert!(it_finds("library", "There are many libraries"));
+    }
+
+    #[test]
+    fn test_stem_argue() {
+        assert!(it_finds("argue", "Stop arguing"));
     }
 
     #[test]
