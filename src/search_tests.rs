@@ -2,22 +2,39 @@
 mod tests {
     use crate::woztext;
 
-    use tantivy::{doc, Index, IndexWriter, ReloadPolicy};
+    use tantivy::{doc, Index, IndexWriter, ReloadPolicy, TantivyDocument};
     use tantivy::collector::TopDocs;
     use tantivy::query::QueryParser;
-    use tantivy::schema::{Schema};
+    use tantivy::schema::{Schema, Value, STORED, STRING};
+
+    struct DummyDoc {
+        path: String,
+        contents: String
+    }
+
+    impl DummyDoc {
+        fn new(path: &str, contents: &str) -> DummyDoc {
+            DummyDoc { path: path.to_string(), contents: contents.to_string() }
+        }
+    }
 
     // this is probably heavy, meh I dunno what I'm doing
-    fn it_finds(query: &str, doc_text: &str) -> bool {
+    fn search_docs(query: &str, docs: Vec<DummyDoc>) -> Vec<String> {
         let mut schema_builder = Schema::builder();
-        let text_field = schema_builder.add_text_field("text", woztext::options());
+        let path_field = schema_builder.add_text_field("path", STRING | STORED);
+        let content_field = schema_builder.add_text_field("content", woztext::options());
 
         let index = Index::create_in_ram(schema_builder.build());
         index.tokenizers().register(woztext::TOKENIZER_NAME, woztext::tokenizer());
 
         let mut index_writer: IndexWriter = index.writer(15_000_000).unwrap();
-        index_writer.add_document(doc!(text_field => doc_text)).expect("TODO: panic message");
-        index_writer.commit().expect("this must work");
+        for doc in docs {
+            index_writer.add_document(doc!(
+                path_field => doc.path,
+                content_field => doc.contents,
+            )).expect("failed to add doc");
+        }
+        index_writer.commit().expect("failed to commit index");
 
         let reader = index
             .reader_builder()
@@ -25,16 +42,35 @@ mod tests {
             .try_into()
             .unwrap();
         let searcher = reader.searcher();
-        let query_parser = QueryParser::for_index(&index, vec![text_field]);
+        let query_parser = QueryParser::for_index(&index, vec![content_field]);
         let query = query_parser.parse_query(query).unwrap();
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10)).unwrap();
 
-        top_docs.len() == 1
+        let mut paths = vec![];
 
-        //index_writer.delete_all_documents() // todo: maybe use this for perf
+        for (_, addr) in top_docs {
+            let doc: TantivyDocument = searcher.doc(addr).unwrap();
+            paths.push(doc.get_first(path_field).unwrap().as_str().unwrap().to_owned());
+        }
+
+        paths
+    }
+
+    fn it_finds(query: &str, doc_text: &str) -> bool {
+        let docs = search_docs(query, vec![DummyDoc::new("", doc_text)]);
+        docs.len() == 1
     }
 
     fn it_does_not_find(query: &str, doc_text: &str) -> bool { !it_finds(query, doc_text) }
+
+    #[test]
+    fn test_find_doc() {
+        let found_docs = search_docs("blah", vec![
+            DummyDoc::new("a/b.txt", "blah blah some stuff and things"),
+            DummyDoc::new("a/c/d.txt", "what about shoes and biscuits"),
+        ]);
+        assert_eq!(found_docs, ["a/b.txt"]);
+    }
 
     #[test]
     fn test_single_word() {

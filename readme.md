@@ -24,7 +24,7 @@ index: 162.4ms, search: 0.0ms
 
 Using tokenizer wozregex
 After 5 runs. Time to index & search 10000 files:
-index: 600.2ms, search: 19.8ms
+index: 690.2ms, search: 0ms
 
 peak heap memory consumption: 310.66M (testing both indexes)
 ```
