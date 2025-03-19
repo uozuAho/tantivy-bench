@@ -78,6 +78,16 @@ mod tests {
     }
 
     #[test]
+    fn test_case_insensitive() {
+        assert!(it_finds("HAM", "the ham is good"));
+    }
+
+    #[test]
+    fn test_case_insensitive2() {
+        assert!(it_finds("ham", "the HAM is good"));
+    }
+
+    #[test]
     fn test_does_not_find_missing_word() {
         assert!(it_does_not_find("pizza", "the ham is good"));
     }
@@ -110,5 +120,50 @@ mod tests {
     #[test]
     fn test_finds_word_after_slash() {
         assert!(it_finds("refactor", "red/green/refactor"));
+    }
+
+    #[test]
+    fn test_md_single() {
+        assert!(it_finds("bike", "I have a [bike](a/b/c)"));
+    }
+
+    #[test]
+    fn test_md_first_word() {
+        assert!(it_finds("ham", "I have a [ham bike](a/b/c)"));
+    }
+
+    #[test]
+    fn test_md_middle_word() {
+        assert!(it_finds("ham", "I have a [super ham bike](a/b/c)"));
+    }
+
+    #[test]
+    fn test_md_last_word() {
+        assert!(it_finds("bike", "I have a [super ham bike](a/b/c)"));
+    }
+
+    #[test]
+    fn test_query_search_terms_are_or() {
+        assert!(it_finds("ham potato", "plenty of ham"));
+    }
+
+    #[test]
+    fn test_term_presence() {
+        assert!(it_finds("+ham", "plenty of ham"));
+    }
+
+    #[test]
+    fn test_term_presence_rejects_missing_words() {
+        assert!(it_does_not_find("ham +beach", "plenty of ham"));
+    }
+
+    #[test]
+    fn test_term_presence_ignores_missing_negative() {
+        assert!(it_finds("ham -beach", "plenty of ham"));
+    }
+
+    #[test]
+    fn test_term_presence_excludes_matched_negative() {
+        assert!(it_does_not_find("ham -plenty", "plenty of ham"));
     }
 }
