@@ -6,7 +6,9 @@ pub const TOKENIZER_NAME: &'static str = "wozregex";
 pub fn options() -> TextOptions {
     let indexing = TextFieldIndexing::default()
         .set_tokenizer(TOKENIZER_NAME)
-        // todo: look at options. positions allow phrase queries. can do just freqs, but queries fail complaining about positions
+        // Could maybe save memory here by not saving positions.
+        // Positions allow phrase search. I couldn't get queries
+        // to work without saving positions.
         .set_index_option(IndexRecordOption::WithFreqsAndPositions);
 
     TextOptions::default()

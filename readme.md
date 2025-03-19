@@ -9,6 +9,7 @@ Intended to compete with https://github.com/uozuAho/ts-fulltext-compare
 - (optional) download [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
 
 ```sh
+cargo test
 cargo run --profile release -- <directory of md files>
 
 # get mem usage
