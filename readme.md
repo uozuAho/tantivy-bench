@@ -1,5 +1,6 @@
 # My tantivy benchmarks
 
+[Tantivy](https://github.com/quickwit-oss/tantivy).
 Intended to compete with https://github.com/uozuAho/ts-fulltext-compare
 
 # Quick start
