@@ -13,7 +13,7 @@ cargo test
 cargo run --profile release -- <directory of md files>
 
 # get mem usage
-heaptrack ./target/release/tantivy-bench
+heaptrack ./target/release/tantivy-bench <directory of md files>
 heaptrack --analyze <use output of above command>
 ```
 
@@ -25,7 +25,7 @@ index: 162.4ms, search: 0.0ms
 
 Using tokenizer wozregex
 After 5 runs. Time to index & search 10000 files:
-index: 690.2ms, search: 0ms
+index: 600.2ms, search: 0ms
 
 peak heap memory consumption: 310.66M (testing both indexes)
 ```
